@@ -28,7 +28,8 @@ package moe.ouom.neriplayer.ui.tv
  * - rememberTvEntryFocusRequester / Modifier.tvEntryFocusTarget: 进入界面后自动落焦点
  */
 
-import androidx.compose.foundation.Indication
+import androidx.compose.foundation.IndicationNodeFactory
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -40,13 +41,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.FocusDirection
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.draw.DrawModifierNode
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusable
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
@@ -54,6 +53,8 @@ import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.DelegatableNode
+import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineStart
@@ -77,7 +78,7 @@ val LocalTvFocusStrokeColor = staticCompositionLocalOf { Color.Transparent }
  * 通过 LocalIndication 全局注入后, 所有未显式指定 indication 的
  * clickable / combinedClickable 组件自动获得该效果, 无需逐个修改。
  */
-object TvFocusIndication : Indication {
+object TvFocusIndication : IndicationNodeFactory {
 
     override fun create(interactionSource: InteractionSource): DelegatableNode {
         return TvFocusIndicationNode(interactionSource)
@@ -105,8 +106,8 @@ private class TvFocusIndicationNode(
         interactionJob = coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             interactionSource.interactions.collect { interaction ->
                 when (interaction) {
-                    is FocusInteraction.FocusIn -> isFocused = true
-                    is FocusInteraction.FocusOut -> isFocused = false
+                    is FocusInteraction.Focus -> isFocused = true
+                    is FocusInteraction.Unfocus -> isFocused = false
                     is PressInteraction.Press -> isPressed = true
                     is PressInteraction.Release, is PressInteraction.Cancel -> isPressed = false
                 }
