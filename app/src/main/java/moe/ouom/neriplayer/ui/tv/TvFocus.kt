@@ -51,10 +51,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
-import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineStart
@@ -65,15 +64,12 @@ import kotlinx.coroutines.launch
 /** 是否运行在 TV 设备上, 由 MainActivity 在组合树根部注入 */
 val LocalIsTvDevice = staticCompositionLocalOf { false }
 
-/** TV 焦点描边颜色, 由 NeriTheme 按 colorScheme 注入 */
-val LocalTvFocusStrokeColor = staticCompositionLocalOf { Color.Transparent }
-
 /**
  * TV 全局焦点指示器。
  *
  * 替换默认 ripple (仅在 TV 上通过 LocalIndication 注入):
- * - 焦点态: 3dp 高亮描边 + 6% 压暗遮罩, 遥控器用户能明确看到当前焦点在哪
- * - 按压态: 12% 压暗遮罩, 提供按下反馈
+ * - 焦点态: 1.03 放大 + 淡亮蓝背景 + 3dp 亮蓝描边, 遥控器用户能明确看到当前焦点在哪
+ * - 按压态: 亮蓝背景加深, 提供按下反馈
  *
  * 通过 LocalIndication 全局注入后, 所有未显式指定 indication 的
  * clickable / combinedClickable 组件自动获得该效果, 无需逐个修改。
@@ -91,12 +87,16 @@ object TvFocusIndication : IndicationNodeFactory {
 
 private const val TV_FOCUS_CORNER_RADIUS_DP = 14
 private const val TV_FOCUS_STROKE_WIDTH_DP = 3
-private const val TV_FOCUS_SCRIM_ALPHA = 0.06f
-private const val TV_PRESSED_SCRIM_ALPHA = 0.12f
+private const val TV_FOCUS_SCALE = 1.03f
+private const val TV_FOCUS_BLUE_SCRIM_ALPHA = 0.16f
+private const val TV_PRESSED_BLUE_SCRIM_ALPHA = 0.28f
+
+// 亮蓝 (Light Blue 300), 明暗主题下都清晰可辨
+private val TvFocusBlue = Color(0xFF4FC3F7)
 
 private class TvFocusIndicationNode(
     private val interactionSource: InteractionSource
-) : Modifier.Node(), DrawModifierNode, CompositionLocalConsumerModifierNode {
+) : Modifier.Node(), DrawModifierNode {
 
     private var isFocused by mutableStateOf(false)
     private var isPressed by mutableStateOf(false)
@@ -121,24 +121,31 @@ private class TvFocusIndicationNode(
     }
 
     override fun ContentDrawScope.draw() {
-        drawContent()
         val cornerRadius = CornerRadius(TV_FOCUS_CORNER_RADIUS_DP.dp.toPx())
-        if (isFocused || isPressed) {
-            val scrimAlpha = when {
-                isPressed -> TV_PRESSED_SCRIM_ALPHA
-                else -> TV_FOCUS_SCRIM_ALPHA
-            }
-            drawRoundRect(
-                color = Color.Black.copy(alpha = scrimAlpha),
-                cornerRadius = cornerRadius
-            )
-        }
         if (isFocused) {
-            drawRoundRect(
-                color = currentValueOf(LocalTvFocusStrokeColor),
-                style = Stroke(width = TV_FOCUS_STROKE_WIDTH_DP.dp.toPx()),
-                cornerRadius = cornerRadius
-            )
+            // 焦点态: 内容 + 蓝色背景 + 描边整体放大, 视觉上"浮起"
+            withTransform({
+                scale(TV_FOCUS_SCALE, TV_FOCUS_SCALE, pivot = center)
+            }) {
+                drawContent()
+                drawRoundRect(
+                    color = TvFocusBlue.copy(alpha = TV_FOCUS_BLUE_SCRIM_ALPHA),
+                    cornerRadius = cornerRadius
+                )
+                drawRoundRect(
+                    color = TvFocusBlue,
+                    style = Stroke(width = TV_FOCUS_STROKE_WIDTH_DP.dp.toPx()),
+                    cornerRadius = cornerRadius
+                )
+            }
+        } else {
+            drawContent()
+            if (isPressed) {
+                drawRoundRect(
+                    color = TvFocusBlue.copy(alpha = TV_PRESSED_BLUE_SCRIM_ALPHA),
+                    cornerRadius = cornerRadius
+                )
+            }
         }
     }
 }

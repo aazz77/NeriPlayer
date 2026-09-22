@@ -166,7 +166,6 @@ import moe.ouom.neriplayer.util.platform.applyPreferredHighRefreshRate
 import moe.ouom.neriplayer.util.platform.resolveOnePlusHighDensityUiScale
 import moe.ouom.neriplayer.util.platform.isTvDevice
 import moe.ouom.neriplayer.ui.tv.LocalIsTvDevice
-import moe.ouom.neriplayer.ui.tv.LocalTvFocusStrokeColor
 import moe.ouom.neriplayer.ui.tv.TvFocusIndication
 
 private data class PendingAudioServiceStart(
@@ -1440,14 +1439,7 @@ fun NeriTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography(),
-        content = {
-            // TV 焦点描边色跟随主题 primary, 保证明暗两种主题下都清晰可见
-            CompositionLocalProvider(
-                LocalTvFocusStrokeColor provides colorScheme.primary
-            ) {
-                content()
-            }
-        }
+        content = content
     )
 }
 
