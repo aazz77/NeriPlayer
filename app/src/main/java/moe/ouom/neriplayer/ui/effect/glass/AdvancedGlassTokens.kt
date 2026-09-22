@@ -26,6 +26,11 @@ internal fun advancedGlassTokens(
             tintAlpha = 0.75f,
             edgeAlpha = 0.12f
         )
+        AdvancedGlassRole.SideNavigation -> AdvancedGlassTokens(
+            blurRadiusDp = adjustableRadiusDp ?: 28f,
+            tintAlpha = 0.75f,
+            edgeAlpha = 0.12f
+        )
         AdvancedGlassRole.ScreenTopTab -> AdvancedGlassTokens(
             blurRadiusDp = adjustableRadiusDp ?: 22f,
             tintAlpha = if (isDarkTheme) 0.16f else 0.18f,

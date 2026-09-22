@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
@@ -87,7 +88,8 @@ internal fun AdvancedGlassSurface(
     val resolvedTintColor = if (tintColor.isColorSpecified) tintColor else advancedGlassRoleColor(role)
     val edgeBaseColor = MaterialTheme.colorScheme.onSurface
     val requiresContentBackdrop = role == AdvancedGlassRole.MiniPlayer ||
-        role == AdvancedGlassRole.BottomNavigation
+        role == AdvancedGlassRole.BottomNavigation ||
+        role == AdvancedGlassRole.SideNavigation
     val backdropsReady = availableBackdrops?.let { backdrops ->
         backdrops.background.positionInWindow.isSpecified &&
             (!requiresContentBackdrop || backdrops.content.positionInWindow.isSpecified)
@@ -240,15 +242,29 @@ private fun BoxScope.GlassEdgeLayer(
                 }
                 val stroke = Stroke(width = 1.dp.toPx())
                 onDrawBehind {
-                    if (role == AdvancedGlassRole.BottomNavigation) {
-                        drawLine(
+                    when (role) {
+                        // 底部导航: 顶边分隔线
+                        AdvancedGlassRole.BottomNavigation -> drawLine(
                             color = color,
                             start = Offset.Zero,
                             end = Offset(size.width, 0f),
                             strokeWidth = stroke.width
                         )
-                    } else {
-                        drawPath(path = path, color = color, style = stroke)
+                        // 侧边导航: 朝向内容一侧的分隔线 (RTL 下仍在内容侧)
+                        AdvancedGlassRole.SideNavigation -> {
+                            val edgeX = if (layoutDirection == LayoutDirection.Rtl) {
+                                0f
+                            } else {
+                                size.width
+                            }
+                            drawLine(
+                                color = color,
+                                start = Offset(edgeX, 0f),
+                                end = Offset(edgeX, size.height),
+                                strokeWidth = stroke.width
+                            )
+                        }
+                        else -> drawPath(path = path, color = color, style = stroke)
                     }
                 }
             }
@@ -259,6 +275,7 @@ private fun BoxScope.GlassEdgeLayer(
 private fun advancedGlassRoleColor(role: AdvancedGlassRole): Color = when (role) {
     AdvancedGlassRole.MiniPlayer -> MaterialTheme.colorScheme.secondaryContainer
     AdvancedGlassRole.BottomNavigation,
+    AdvancedGlassRole.SideNavigation,
     AdvancedGlassRole.ScreenTopTab,
     AdvancedGlassRole.SettingsGroup,
     AdvancedGlassRole.SettingsSection -> MaterialTheme.colorScheme.surfaceContainerHighest

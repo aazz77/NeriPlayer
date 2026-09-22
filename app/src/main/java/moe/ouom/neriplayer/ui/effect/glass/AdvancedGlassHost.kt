@@ -122,7 +122,8 @@ internal fun AdvancedGlassHost(
             }
             val contentRegions = renderedRegions.filter { region ->
                 region.role == AdvancedGlassRole.MiniPlayer ||
-                    region.role == AdvancedGlassRole.BottomNavigation
+                    region.role == AdvancedGlassRole.BottomNavigation ||
+                    region.role == AdvancedGlassRole.SideNavigation
             }
             AdvancedGlassRenderRegionState(
                 background = resolveStableAdvancedGlassRenderRegions(
@@ -135,7 +136,8 @@ internal fun AdvancedGlassHost(
                 ),
                 hasNavigationSceneRegion = renderedRegions.any { region ->
                     region.role != AdvancedGlassRole.MiniPlayer &&
-                        region.role != AdvancedGlassRole.BottomNavigation
+                        region.role != AdvancedGlassRole.BottomNavigation &&
+                        region.role != AdvancedGlassRole.SideNavigation
                 },
                 backgroundBackdropReady = backgroundBackdrop.positionInWindow.isSpecified,
                 contentBackdropReady = contentBackdrop.positionInWindow.isSpecified

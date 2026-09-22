@@ -58,6 +58,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -191,6 +192,7 @@ import moe.ouom.neriplayer.navigation.LauncherShortcutAction
 import moe.ouom.neriplayer.navigation.LauncherShortcutRequest
 import moe.ouom.neriplayer.navigation.launcherShortcutMainTabRoute
 import moe.ouom.neriplayer.ui.component.navigation.NeriBottomBar
+import moe.ouom.neriplayer.ui.component.navigation.NeriNavigationRail
 import moe.ouom.neriplayer.ui.component.navigation.resolveBottomBarSelectionAlpha
 import moe.ouom.neriplayer.ui.component.playback.NeriMiniPlayer
 import moe.ouom.neriplayer.ui.component.playback.NeriMiniPlayerDefaults
@@ -3428,892 +3430,909 @@ private fun NeriAppContent(
 
                 CompositionLocalProvider(LocalMiniPlayerHeight provides reservedMiniPlayerHeightDp) {
                     AppFeedbackHostEffect(snackbarHostState)
-                    Scaffold(
-                        containerColor = containerColor,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                        snackbarHost = {
-                            val miniH = LocalMiniPlayerHeight.current
-                            NeriSnackbarHost(
-                                hostState = snackbarHostState,
-                                bottomPadding = miniH
+                    // TV: 底部导航栏替换为左侧 rail, Row 左右分栏 (rail + Scaffold 内容区)
+                    val isTvDevice = LocalIsTvDevice.current
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        if (isTvDevice) {
+                            NeriNavigationRail(
+                                modifier = Modifier.fillMaxHeight(),
+                                selectAlpha = selectAlpha,
+                                items = bottomBarItems,
+                                currentDestination = backEntry?.destination,
+                                onItemSelected = { dest ->
+                                    navigateToMainTab(dest.route)
+                                }
                             )
-                        },
-                        bottomBar = {
-                            val bottomBarVisibilityProgress by animateFloatAsState(
-                                targetValue = if (showNowPlaying) 0f else 1f,
-                                animationSpec = tween(
-                                    durationMillis = if (showNowPlaying) 220 else 280,
-                                    easing = FastOutSlowInEasing
-                                ),
-                                label = "bottom_bar_visibility"
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clipToBounds()
-                            ) {
-                                Column(
+                        }
+                        Scaffold(
+                            containerColor = containerColor,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            snackbarHost = {
+                                val miniH = LocalMiniPlayerHeight.current
+                                NeriSnackbarHost(
+                                    hostState = snackbarHostState,
+                                    bottomPadding = miniH
+                                )
+                            },
+                            bottomBar = {
+                                val bottomBarVisibilityProgress by animateFloatAsState(
+                                    targetValue = if (showNowPlaying) 0f else 1f,
+                                    animationSpec = tween(
+                                        durationMillis = if (showNowPlaying) 220 else 280,
+                                        easing = FastOutSlowInEasing
+                                    ),
+                                    label = "bottom_bar_visibility"
+                                )
+                                Box(
                                     modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .onSizeChanged { size ->
-                                            if (size.height > 0) {
-                                                bottomBarHeightPx = size.height
-                                            }
-                                        }
-                                        .graphicsLayer {
-                                            translationY =
-                                                (1f - bottomBarVisibilityProgress) * bottomBarHeightPx
-                                                    .toFloat()
-                                            alpha = bottomBarVisibilityProgress
-                                        }
+                                        .fillMaxWidth()
+                                        .clipToBounds()
                                 ) {
-                                    AnimatedVisibility(visible = offlineMode) {
-                                        OfflineModeBottomBanner()
-                                    }
-
-                                    NeriBottomBar(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        selectAlpha = selectAlpha,
-                                        items = bottomBarItems,
-                                        currentDestination = backEntry?.destination,
-                                        onItemSelected = { dest ->
-                                            navigateToMainTab(dest.route)
+                                    Column(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .onSizeChanged { size ->
+                                                if (size.height > 0) {
+                                                    bottomBarHeightPx = size.height
+                                                }
+                                            }
+                                            .graphicsLayer {
+                                                translationY =
+                                                    (1f - bottomBarVisibilityProgress) * bottomBarHeightPx
+                                                        .toFloat()
+                                                alpha = bottomBarVisibilityProgress
+                                            }
+                                    ) {
+                                        AnimatedVisibility(visible = offlineMode) {
+                                            OfflineModeBottomBanner()
                                         }
-                                    )
+
+                                        if (!isTvDevice) {
+                                            NeriBottomBar(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                selectAlpha = selectAlpha,
+                                                items = bottomBarItems,
+                                                currentDestination = backEntry?.destination,
+                                                onItemSelected = { dest ->
+                                                    navigateToMainTab(dest.route)
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    ) { innerPadding ->
-                        val bottomBarInset = innerPadding.calculateBottomPadding()
-                            .coerceAtLeast(0.dp)
-                        val bottomBarLayoutInsets = resolveBottomBarLayoutInsets(
-                            baseBlurRequested = advancedGlassController.isBaseBlurRequested,
-                            bottomBarInset = bottomBarInset,
-                            reservedMiniPlayerHeight = reservedMiniPlayerHeightDp
-                        )
-                        CompositionLocalProvider(
-                            LocalMiniPlayerHeight provides bottomBarLayoutInsets.screenBottomInset
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(
-                                        bottom = bottomBarLayoutInsets.navContentBottomPadding
-                                    )
-                                    .clipToBounds()
+                        ) { innerPadding ->
+                            val bottomBarInset = innerPadding.calculateBottomPadding()
+                                .coerceAtLeast(0.dp)
+                            val bottomBarLayoutInsets = resolveBottomBarLayoutInsets(
+                                baseBlurRequested = advancedGlassController.isBaseBlurRequested,
+                                bottomBarInset = bottomBarInset,
+                                reservedMiniPlayerHeight = reservedMiniPlayerHeightDp
+                            )
+                            CompositionLocalProvider(
+                                LocalMiniPlayerHeight provides bottomBarLayoutInsets.screenBottomInset
                             ) {
-                                // Keep the effect on a stable layer outside NavHost transitions
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .captureAdvancedGlassBackdrop(contentGlassBackdrop)
+                                        .padding(
+                                            bottom = bottomBarLayoutInsets.navContentBottomPadding
+                                        )
+                                        .clipToBounds()
                                 ) {
-                                    MainTabLayerHost(
-                                        selectedRoute = selectedMainTabRoute,
-                                        transitionState = mainTabTransitionState,
-                                        focusEnabled = currentRoute == selectedMainTabRoute,
+                                    // Keep the effect on a stable layer outside NavHost transitions
+                                    Box(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .onSizeChanged { size ->
-                                                if (size.height > 0) {
-                                                    mainTabDetailContentHeightPx = size.height
-                                                }
-                                            }
-                                            .offset {
-                                                IntOffset(
-                                                    x = 0,
-                                                    y = (
-                                                        mainTabLayerTransform
-                                                            .translationYFraction *
-                                                            mainTabDetailContentHeightPx
-                                                    ).roundToInt()
-                                                )
-                                            }
-                                            .graphicsLayer {
-                                                scaleX = mainTabLayerTransform.scale
-                                                scaleY = mainTabLayerTransform.scale
-                                                alpha = mainTabLayerTransform.alpha
-                                                transformOrigin = TransformOrigin.Center
-                                            }
-                                            .zIndex(MAIN_TAB_LAYER_Z_INDEX),
-                                        onVisibleGlassOwnersChanged = {
-                                            visibleMainTabGlassOwners = it
-                                        },
-                                        content = { route ->
-                                            RenderMainTabRoute(route)
-                                        }
-                                    )
-                                    AdvancedGlassNavigationHandoff(
-                                        enabled = shouldUseAdvancedGlassNavigationHandoff(
-                                            visibleNavigationRoutes
-                                        )
+                                            .captureAdvancedGlassBackdrop(contentGlassBackdrop)
                                     ) {
-                                        // TV: 路由切换 / NowPlaying 关闭后自动落焦到当前屏第一个可聚焦项
-                                        if (LocalIsTvDevice.current) {
-                                            TvNavEntryFocusAnchor(
-                                                currentRoute = currentRoute,
-                                                showNowPlaying = showNowPlaying
-                                            )
-                                        }
-                                        NavHost(
-                                            navController = navController,
-                                            startDestination = navHostStartDestination,
+                                        MainTabLayerHost(
+                                            selectedRoute = selectedMainTabRoute,
+                                            transitionState = mainTabTransitionState,
+                                            focusEnabled = currentRoute == selectedMainTabRoute,
                                             modifier = Modifier
                                                 .fillMaxSize()
-                                                .zIndex(NAV_HOST_LAYER_Z_INDEX)
-                                        ) {
-                                composable(
-                                    Destinations.Home.route,
-                                    enterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {}
-
-                                composable(
-                                    route = Destinations.PlaylistDetail.route,
-                                    arguments = listOf(navArgument("playlistJson") {
-                                        type = NavType.StringType
-                                    }),
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) { backStackEntry ->
-                                    val playlistJson = backStackEntry.arguments?.getString("playlistJson")
-                                    val playlist = navigationGson.fromJson(playlistJson, PlaylistSummary::class.java)
-                                    RenderNavHostScene(
-                                        Destinations.PlaylistDetail.route
-                                    ) {
-                                        NeteasePlaylistDetailScreen(
-                                            playlist = playlist,
-                                            onBack = { navController.popBackStack() },
-                                            onSongClick = { songs, index ->
-                                                playSongsAndOpenNowPlaying(
-                                                    songs = songs,
-                                                    index = index,
-                                                    sourceRoute = neteasePlaylistSourceRoute(playlist)
-                                                )
-                                            },
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.NeteaseAlbumDetail.route,
-                                    arguments = listOf(navArgument("playlistJson") {
-                                        type = NavType.StringType
-                                    }),
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) { backStackEntry ->
-                                    val playlistJson = backStackEntry.arguments?.getString("playlistJson")
-                                    val album = navigationGson.fromJson(playlistJson, AlbumSummary::class.java)
-                                    RenderNavHostScene(
-                                        Destinations.NeteaseAlbumDetail.route
-                                    ) {
-                                        NeteaseAlbumDetailScreen(
-                                            album = album,
-                                            onBack = { navController.popBackStack() },
-                                            onSongClick = { songs, index ->
-                                                playSongsAndOpenNowPlaying(
-                                                    songs = songs,
-                                                    index = index,
-                                                    sourceRoute = neteaseAlbumSourceRoute(album)
-                                                )
-                                            },
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.NeteaseArtistDetail.route,
-                                    arguments = listOf(navArgument("artistJson") {
-                                        type = NavType.StringType
-                                    }),
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) { backStackEntry ->
-                                    val artistJson = backStackEntry.arguments?.getString("artistJson")
-                                    val artist = navigationGson.fromJson(artistJson, NeteaseArtistSummary::class.java)
-                                    RenderNavHostScene(
-                                        Destinations.NeteaseArtistDetail.route
-                                    ) {
-                                        NeteaseArtistDetailScreen(
-                                            artist = artist,
-                                            onBack = { navController.popBackStack() },
-                                            onSongClick = ::playSongsAndOpenNowPlaying,
-                                            offlineMode = offlineMode,
-                                            onAlbumClick = { album ->
-                                                navigateToNeteaseAlbum(album)
-                                            }
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.YouTubeMusicCreatorDetail.route,
-                                    arguments = listOf(navArgument("creatorJson") {
-                                        type = NavType.StringType
-                                    }),
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) { backStackEntry ->
-                                    val creatorJson = backStackEntry.arguments
-                                        ?.getString("creatorJson")
-                                    val creator = navigationGson.fromJson(
-                                        creatorJson,
-                                        YouTubeMusicCreatorSummary::class.java
-                                    )
-                                    RenderNavHostScene(
-                                        Destinations.YouTubeMusicCreatorDetail.route
-                                    ) {
-                                        YouTubeMusicCreatorNavigationScreen(
-                                            creator = creator,
-                                            onBack = { navController.popBackStack() },
-                                            onSongClick = ::playSongsAndOpenNowPlaying,
-                                            onPlaylistClick = ::navigateToYouTubeMusicPlaylist,
-                                            onCreatorClick = ::navigateToYouTubeMusicCreator,
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.YouTubeMusicPlaylistDetail.route,
-                                    arguments = listOf(navArgument("playlistJson") {
-                                        type = NavType.StringType
-                                    }),
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) { backStackEntry ->
-                                    val playlistJson = backStackEntry.arguments
-                                        ?.getString("playlistJson")
-                                    val playlist = navigationGson.fromJson(
-                                        playlistJson,
-                                        YouTubeMusicPlaylist::class.java
-                                    )
-                                    RenderNavHostScene(
-                                        Destinations.YouTubeMusicPlaylistDetail.route
-                                    ) {
-                                        YouTubeMusicPlaylistDetailScreen(
-                                            playlist = playlist,
-                                            onBack = { navController.popBackStack() },
-                                            onSongClick = ::playSongsAndOpenNowPlaying,
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.BiliPlaylistDetail.route,
-                                    arguments = listOf(navArgument("playlistJson") {
-                                        type = NavType.StringType
-                                    }),
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) { backStackEntry ->
-                                    val playlistJson = backStackEntry.arguments?.getString("playlistJson")
-                                    val playlist = navigationGson.fromJson(playlistJson, BiliPlaylist::class.java)
-                                    val suppressBiliPlaylistVisibilityTransition =
-                                        shouldUseInstantBiliUploaderPlaylistTransition(
-                                            initialRoute = navController.previousBackStackEntry
-                                                ?.destination
-                                                ?.route,
-                                            targetRoute = Destinations.BiliPlaylistDetail.route
-                                        )
-                                    RenderNavHostScene(
-                                        Destinations.BiliPlaylistDetail.route
-                                    ) {
-                                        BiliPlaylistDetailScreen(
-                                            playlist = playlist,
-                                            suppressVisibilityTransition =
-                                                suppressBiliPlaylistVisibilityTransition,
-                                            onBack = { navController.popBackStack() },
-                                            onPlayAudio = { videos, index ->
-                                                playBiliAudioAndOpenNowPlayingWithSource(
-                                                    videos = videos,
-                                                    index = index,
-                                                    sourceRoute = biliPlaylistSourceRoute(playlist)
-                                                )
-                                            },
-                                            onPlayParts = { videoInfo, index, coverUrl ->
-                                                playBiliPartsAndOpenNowPlayingWithSource(
-                                                    videoInfo = videoInfo,
-                                                    index = index,
-                                                    coverUrl = coverUrl,
-                                                    sourceRoute = biliPlaylistSourceRoute(playlist)
-                                                )
-                                            },
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.BiliUploaderDetail.route,
-                                    arguments = listOf(navArgument("uploaderJson") {
-                                        type = NavType.StringType
-                                    }),
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) { backStackEntry ->
-                                    val uploaderJson = backStackEntry.arguments
-                                        ?.getString("uploaderJson")
-                                    val uploader = navigationGson.fromJson(
-                                        uploaderJson,
-                                        BiliUploaderSummary::class.java
-                                    )
-                                    RenderNavHostScene(
-                                        Destinations.BiliUploaderDetail.route
-                                    ) {
-                                        BiliUploaderDetailScreen(
-                                            uploader = uploader,
-                                            onBack = { navController.popBackStack() },
-                                            onPlayAudio = { videos, index ->
-                                                playBiliAudioAndOpenNowPlayingWithSource(
-                                                    videos = videos,
-                                                    index = index,
-                                                    sourceRoute = biliUploaderSourceRoute(uploader)
-                                                )
-                                            },
-                                            onPlayParts = { videoInfo, index, coverUrl ->
-                                                playBiliPartsAndOpenNowPlayingWithSource(
-                                                    videoInfo = videoInfo,
-                                                    index = index,
-                                                    coverUrl = coverUrl,
-                                                    sourceRoute = biliUploaderSourceRoute(uploader)
-                                                )
-                                            },
-                                            onContentClick = { playlist ->
-                                                navController.navigate(
-                                                    biliPlaylistSourceRoute(playlist)
-                                                ) {
-                                                    launchSingleTop = true
+                                                .onSizeChanged { size ->
+                                                    if (size.height > 0) {
+                                                        mainTabDetailContentHeightPx = size.height
+                                                    }
                                                 }
+                                                .offset {
+                                                    IntOffset(
+                                                        x = 0,
+                                                        y = (
+                                                            mainTabLayerTransform
+                                                                .translationYFraction *
+                                                                mainTabDetailContentHeightPx
+                                                        ).roundToInt()
+                                                    )
+                                                }
+                                                .graphicsLayer {
+                                                    scaleX = mainTabLayerTransform.scale
+                                                    scaleY = mainTabLayerTransform.scale
+                                                    alpha = mainTabLayerTransform.alpha
+                                                    transformOrigin = TransformOrigin.Center
+                                                }
+                                                .zIndex(MAIN_TAB_LAYER_Z_INDEX),
+                                            onVisibleGlassOwnersChanged = {
+                                                visibleMainTabGlassOwners = it
                                             },
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    Destinations.Explore.route,
-                                    enterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {}
-
-                                composable(
-                                    Destinations.Library.route,
-                                    enterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {}
-
-                                composable(
-                                    route = Destinations.LocalPlaylistDetail.route,
-                                    arguments = listOf(navArgument("playlistId") { type = NavType.LongType }),
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) { backStackEntry ->
-                                    val id = backStackEntry.arguments?.getLong("playlistId") ?: 0L
-                                    RenderNavHostScene(
-                                        Destinations.LocalPlaylistDetail.route
-                                    ) {
-                                        LocalPlaylistDetailScreen(
-                                            playlistId = id,
-                                            onBack = { navController.popBackStack() },
-                                            onDeleted = { navController.popBackStack() },
-                                            onSongClick = { songs, index ->
-                                                playSongsAndOpenNowPlaying(
-                                                    songs = songs,
-                                                    index = index,
-                                                    sourceRoute = localPlaylistSourceRoute(id)
-                                                )
-                                            },
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.Recent.route,
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.Recent.route) {
-                                        RecentScreen(
-                                            onBack = { navController.popBackStack() },
-                                            onSongClick = ::playSongsAndOpenNowPlaying,
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.PlaybackStats.route,
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.PlaybackStats.route) {
-                                        PlaybackStatsScreen(
-                                            onBack = { navController.popBackStack() },
-                                            onSongClick = ::playSongsAndOpenNowPlaying,
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    Destinations.Settings.route,
-                                    enterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {}
-
-                                composable(
-                                    route = Destinations.DownloadManager.route,
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    val downloadManagerListState = rememberSaveable(
-                                        saver = LazyListState.Saver
-                                    ) { LazyListState() }
-                                    RenderNavHostScene(Destinations.DownloadManager.route) {
-                                        DownloadManagerScreen(
-                                            onBack = { navController.popBackStack() },
-                                            onOpenDownloadProgress = {
-                                                navController.navigate(
-                                                    Destinations.DownloadProgress.route
-                                                )
-                                            },
-                                            listState = downloadManagerListState,
-                                            offlineMode = offlineMode
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.DownloadProgress.route,
-                                    enterTransition = {
-                                        transparentDetailEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        transparentDetailExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        transparentDetailPopEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        transparentDetailPopExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    val downloadProgressListState = rememberSaveable(
-                                        saver = LazyListState.Saver
-                                    ) { LazyListState() }
-                                    RenderNavHostScene(Destinations.DownloadProgress.route) {
-                                        DownloadProgressScreen(
-                                            onBack = { navController.popBackStack() },
-                                            listState = downloadProgressListState
-                                        )
-                                    }
-                                }
-
-                                composable(
-                                    Destinations.Debug.route,
-                                    enterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        mainTabEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        mainTabExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {}
-                                composable(
-                                    route = Destinations.DebugListenTogether.route,
-                                    enterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.DebugListenTogether.route) {
-                                        ListenTogetherDebugScreen()
-                                    }
-                                }
-                                composable(
-                                    route = Destinations.DebugUsbExclusive.route,
-                                    enterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.DebugUsbExclusive.route) {
-                                        UsbExclusiveDebugScreen()
-                                    }
-                                }
-                                composable(
-                                    route = Destinations.DebugYouTube.route,
-                                    enterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.DebugYouTube.route) {
-                                        YouTubeApiProbeScreen()
-                                    }
-                                }
-                                composable(
-                                    route = Destinations.DebugBili.route,
-                                    enterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.DebugBili.route) {
-                                        BiliApiProbeScreen()
-                                    }
-                                }
-                                composable(
-                                    route = Destinations.DebugNetease.route,
-                                    enterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.DebugNetease.route) {
-                                        NeteaseApiProbeScreen()
-                                    }
-                                }
-                                composable(
-                                    route = Destinations.DebugSearch.route,
-                                    enterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.DebugSearch.route) {
-                                        SearchApiProbeScreen()
-                                    }
-                                }
-                                composable(
-                                    route = Destinations.DebugLogsList.route,
-                                    enterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.DebugLogsList.route) {
-                                        LogListScreen(
-                                            onBack = { navController.popBackStack() },
-                                            onLogFileClick = { filePath ->
-                                                navController.navigate(
-                                                    Destinations.DebugLogViewer.createRoute(filePath)
-                                                )
+                                            content = { route ->
+                                                RenderMainTabRoute(route)
                                             }
                                         )
-                                    }
-                                }
-
-                                composable(
-                                    route = Destinations.DebugCrashLogsList.route,
-                                    enterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) {
-                                    RenderNavHostScene(Destinations.DebugCrashLogsList.route) {
-                                        CrashLogListScreen(
-                                            onBack = { navController.popBackStack() },
-                                            onLogFileClick = { filePath ->
-                                                navController.navigate(
-                                                    Destinations.DebugLogViewer.createRoute(filePath)
+                                        AdvancedGlassNavigationHandoff(
+                                            enabled = shouldUseAdvancedGlassNavigationHandoff(
+                                                visibleNavigationRoutes
+                                            )
+                                        ) {
+                                            // TV: 路由切换 / NowPlaying 关闭后自动落焦到当前屏第一个可聚焦项
+                                            if (LocalIsTvDevice.current) {
+                                                TvNavEntryFocusAnchor(
+                                                    currentRoute = currentRoute,
+                                                    showNowPlaying = showNowPlaying
                                                 )
                                             }
-                                        )
-                                    }
-                                }
+                                            NavHost(
+                                                navController = navController,
+                                                startDestination = navHostStartDestination,
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .zIndex(NAV_HOST_LAYER_Z_INDEX)
+                                            ) {
+                                    composable(
+                                        Destinations.Home.route,
+                                        enterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {}
 
-                                composable(
-                                    route = Destinations.DebugLogViewer.route,
-                                    arguments = listOf(navArgument("filePath") { type = NavType.StringType }),
-                                    enterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    exitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    },
-                                    popEnterTransition = {
-                                        debugNavigationEnterTransition(coherentFeedbackEnabled)
-                                    },
-                                    popExitTransition = {
-                                        debugNavigationExitTransition(coherentFeedbackEnabled)
-                                    }
-                                ) { backStackEntry ->
-                                    val filePath = backStackEntry.arguments?.getString("filePath") ?: ""
-                                    RenderNavHostScene(Destinations.DebugLogViewer.route) {
-                                        LogViewerScreen(
-                                            filePath = filePath,
-                                            onBack = { navController.popBackStack() }
-                                        )
-                                    }
-                                }
+                                    composable(
+                                        route = Destinations.PlaylistDetail.route,
+                                        arguments = listOf(navArgument("playlistJson") {
+                                            type = NavType.StringType
+                                        }),
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) { backStackEntry ->
+                                        val playlistJson = backStackEntry.arguments?.getString("playlistJson")
+                                        val playlist = navigationGson.fromJson(playlistJson, PlaylistSummary::class.java)
+                                        RenderNavHostScene(
+                                            Destinations.PlaylistDetail.route
+                                        ) {
+                                            NeteasePlaylistDetailScreen(
+                                                playlist = playlist,
+                                                onBack = { navController.popBackStack() },
+                                                onSongClick = { songs, index ->
+                                                    playSongsAndOpenNowPlaying(
+                                                        songs = songs,
+                                                        index = index,
+                                                        sourceRoute = neteasePlaylistSourceRoute(playlist)
+                                                    )
+                                                },
+                                                offlineMode = offlineMode
+                                            )
                                         }
                                     }
-                                }
 
-                                AnimatedVisibility(
-                                    visible = currentSong != null && !showNowPlaying,
-                                    modifier = Modifier
-                                        .align(Alignment.BottomStart)
-                                        .padding(
-                                            bottom = bottomBarLayoutInsets.miniPlayerBottomPadding
+                                    composable(
+                                        route = Destinations.NeteaseAlbumDetail.route,
+                                        arguments = listOf(navArgument("playlistJson") {
+                                            type = NavType.StringType
+                                        }),
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) { backStackEntry ->
+                                        val playlistJson = backStackEntry.arguments?.getString("playlistJson")
+                                        val album = navigationGson.fromJson(playlistJson, AlbumSummary::class.java)
+                                        RenderNavHostScene(
+                                            Destinations.NeteaseAlbumDetail.route
+                                        ) {
+                                            NeteaseAlbumDetailScreen(
+                                                album = album,
+                                                onBack = { navController.popBackStack() },
+                                                onSongClick = { songs, index ->
+                                                    playSongsAndOpenNowPlaying(
+                                                        songs = songs,
+                                                        index = index,
+                                                        sourceRoute = neteaseAlbumSourceRoute(album)
+                                                    )
+                                                },
+                                                offlineMode = offlineMode
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.NeteaseArtistDetail.route,
+                                        arguments = listOf(navArgument("artistJson") {
+                                            type = NavType.StringType
+                                        }),
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) { backStackEntry ->
+                                        val artistJson = backStackEntry.arguments?.getString("artistJson")
+                                        val artist = navigationGson.fromJson(artistJson, NeteaseArtistSummary::class.java)
+                                        RenderNavHostScene(
+                                            Destinations.NeteaseArtistDetail.route
+                                        ) {
+                                            NeteaseArtistDetailScreen(
+                                                artist = artist,
+                                                onBack = { navController.popBackStack() },
+                                                onSongClick = ::playSongsAndOpenNowPlaying,
+                                                offlineMode = offlineMode,
+                                                onAlbumClick = { album ->
+                                                    navigateToNeteaseAlbum(album)
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.YouTubeMusicCreatorDetail.route,
+                                        arguments = listOf(navArgument("creatorJson") {
+                                            type = NavType.StringType
+                                        }),
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) { backStackEntry ->
+                                        val creatorJson = backStackEntry.arguments
+                                            ?.getString("creatorJson")
+                                        val creator = navigationGson.fromJson(
+                                            creatorJson,
+                                            YouTubeMusicCreatorSummary::class.java
                                         )
-                                        .zIndex(MINI_PLAYER_OVERLAY_Z_INDEX),
-                                enter = slideInVertically(
-                                    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-                                    initialOffsetY = { it / 2 }
-                                ) + fadeIn(animationSpec = tween(durationMillis = 180)),
-                                exit = slideOutVertically(
-                                    animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
-                                    targetOffsetY = { it / 2 }
-                                ) + fadeOut(animationSpec = tween(durationMillis = 120))
-                                ) {
-                                    NeriMiniPlayer(
-                                    title = currentSong?.displayName()
-                                        ?: composeResources.getString(R.string.nowplaying_no_playback),
-                                    artist = currentSong?.displayArtist() ?: "",
-                                    coverUrl = displayCoverUrl,
-                                    isPlaying = isPlaybackControlPlaying,
-                                    playPauseEnabled = !usbPlaybackPreparing,
-                                    modifier = Modifier,
-                                    onPlayPause = { PlayerManager.togglePlayPause() },
-                                    onPrevious = { PlayerManager.previous() },
-                                    onNext = { PlayerManager.next() },
-                                    onExpand = { showNowPlaying = true },
-                                    enableBlur = effectiveAdvancedBlurEnabled,
-                                    offlineMode = offlineMode,
-                                    isPlaybackWaiting = isPlaybackWaiting,
-                                    isAudioRouteMuted = isAudioRouteMuted
-                                    )
+                                        RenderNavHostScene(
+                                            Destinations.YouTubeMusicCreatorDetail.route
+                                        ) {
+                                            YouTubeMusicCreatorNavigationScreen(
+                                                creator = creator,
+                                                onBack = { navController.popBackStack() },
+                                                onSongClick = ::playSongsAndOpenNowPlaying,
+                                                onPlaylistClick = ::navigateToYouTubeMusicPlaylist,
+                                                onCreatorClick = ::navigateToYouTubeMusicCreator,
+                                                offlineMode = offlineMode
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.YouTubeMusicPlaylistDetail.route,
+                                        arguments = listOf(navArgument("playlistJson") {
+                                            type = NavType.StringType
+                                        }),
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) { backStackEntry ->
+                                        val playlistJson = backStackEntry.arguments
+                                            ?.getString("playlistJson")
+                                        val playlist = navigationGson.fromJson(
+                                            playlistJson,
+                                            YouTubeMusicPlaylist::class.java
+                                        )
+                                        RenderNavHostScene(
+                                            Destinations.YouTubeMusicPlaylistDetail.route
+                                        ) {
+                                            YouTubeMusicPlaylistDetailScreen(
+                                                playlist = playlist,
+                                                onBack = { navController.popBackStack() },
+                                                onSongClick = ::playSongsAndOpenNowPlaying,
+                                                offlineMode = offlineMode
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.BiliPlaylistDetail.route,
+                                        arguments = listOf(navArgument("playlistJson") {
+                                            type = NavType.StringType
+                                        }),
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) { backStackEntry ->
+                                        val playlistJson = backStackEntry.arguments?.getString("playlistJson")
+                                        val playlist = navigationGson.fromJson(playlistJson, BiliPlaylist::class.java)
+                                        val suppressBiliPlaylistVisibilityTransition =
+                                            shouldUseInstantBiliUploaderPlaylistTransition(
+                                                initialRoute = navController.previousBackStackEntry
+                                                    ?.destination
+                                                    ?.route,
+                                                targetRoute = Destinations.BiliPlaylistDetail.route
+                                            )
+                                        RenderNavHostScene(
+                                            Destinations.BiliPlaylistDetail.route
+                                        ) {
+                                            BiliPlaylistDetailScreen(
+                                                playlist = playlist,
+                                                suppressVisibilityTransition =
+                                                    suppressBiliPlaylistVisibilityTransition,
+                                                onBack = { navController.popBackStack() },
+                                                onPlayAudio = { videos, index ->
+                                                    playBiliAudioAndOpenNowPlayingWithSource(
+                                                        videos = videos,
+                                                        index = index,
+                                                        sourceRoute = biliPlaylistSourceRoute(playlist)
+                                                    )
+                                                },
+                                                onPlayParts = { videoInfo, index, coverUrl ->
+                                                    playBiliPartsAndOpenNowPlayingWithSource(
+                                                        videoInfo = videoInfo,
+                                                        index = index,
+                                                        coverUrl = coverUrl,
+                                                        sourceRoute = biliPlaylistSourceRoute(playlist)
+                                                    )
+                                                },
+                                                offlineMode = offlineMode
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.BiliUploaderDetail.route,
+                                        arguments = listOf(navArgument("uploaderJson") {
+                                            type = NavType.StringType
+                                        }),
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) { backStackEntry ->
+                                        val uploaderJson = backStackEntry.arguments
+                                            ?.getString("uploaderJson")
+                                        val uploader = navigationGson.fromJson(
+                                            uploaderJson,
+                                            BiliUploaderSummary::class.java
+                                        )
+                                        RenderNavHostScene(
+                                            Destinations.BiliUploaderDetail.route
+                                        ) {
+                                            BiliUploaderDetailScreen(
+                                                uploader = uploader,
+                                                onBack = { navController.popBackStack() },
+                                                onPlayAudio = { videos, index ->
+                                                    playBiliAudioAndOpenNowPlayingWithSource(
+                                                        videos = videos,
+                                                        index = index,
+                                                        sourceRoute = biliUploaderSourceRoute(uploader)
+                                                    )
+                                                },
+                                                onPlayParts = { videoInfo, index, coverUrl ->
+                                                    playBiliPartsAndOpenNowPlayingWithSource(
+                                                        videoInfo = videoInfo,
+                                                        index = index,
+                                                        coverUrl = coverUrl,
+                                                        sourceRoute = biliUploaderSourceRoute(uploader)
+                                                    )
+                                                },
+                                                onContentClick = { playlist ->
+                                                    navController.navigate(
+                                                        biliPlaylistSourceRoute(playlist)
+                                                    ) {
+                                                        launchSingleTop = true
+                                                    }
+                                                },
+                                                offlineMode = offlineMode
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        Destinations.Explore.route,
+                                        enterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {}
+
+                                    composable(
+                                        Destinations.Library.route,
+                                        enterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {}
+
+                                    composable(
+                                        route = Destinations.LocalPlaylistDetail.route,
+                                        arguments = listOf(navArgument("playlistId") { type = NavType.LongType }),
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) { backStackEntry ->
+                                        val id = backStackEntry.arguments?.getLong("playlistId") ?: 0L
+                                        RenderNavHostScene(
+                                            Destinations.LocalPlaylistDetail.route
+                                        ) {
+                                            LocalPlaylistDetailScreen(
+                                                playlistId = id,
+                                                onBack = { navController.popBackStack() },
+                                                onDeleted = { navController.popBackStack() },
+                                                onSongClick = { songs, index ->
+                                                    playSongsAndOpenNowPlaying(
+                                                        songs = songs,
+                                                        index = index,
+                                                        sourceRoute = localPlaylistSourceRoute(id)
+                                                    )
+                                                },
+                                                offlineMode = offlineMode
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.Recent.route,
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.Recent.route) {
+                                            RecentScreen(
+                                                onBack = { navController.popBackStack() },
+                                                onSongClick = ::playSongsAndOpenNowPlaying,
+                                                offlineMode = offlineMode
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.PlaybackStats.route,
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.PlaybackStats.route) {
+                                            PlaybackStatsScreen(
+                                                onBack = { navController.popBackStack() },
+                                                onSongClick = ::playSongsAndOpenNowPlaying,
+                                                offlineMode = offlineMode
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        Destinations.Settings.route,
+                                        enterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {}
+
+                                    composable(
+                                        route = Destinations.DownloadManager.route,
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        val downloadManagerListState = rememberSaveable(
+                                            saver = LazyListState.Saver
+                                        ) { LazyListState() }
+                                        RenderNavHostScene(Destinations.DownloadManager.route) {
+                                            DownloadManagerScreen(
+                                                onBack = { navController.popBackStack() },
+                                                onOpenDownloadProgress = {
+                                                    navController.navigate(
+                                                        Destinations.DownloadProgress.route
+                                                    )
+                                                },
+                                                listState = downloadManagerListState,
+                                                offlineMode = offlineMode
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.DownloadProgress.route,
+                                        enterTransition = {
+                                            transparentDetailEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            transparentDetailExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            transparentDetailPopEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            transparentDetailPopExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        val downloadProgressListState = rememberSaveable(
+                                            saver = LazyListState.Saver
+                                        ) { LazyListState() }
+                                        RenderNavHostScene(Destinations.DownloadProgress.route) {
+                                            DownloadProgressScreen(
+                                                onBack = { navController.popBackStack() },
+                                                listState = downloadProgressListState
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        Destinations.Debug.route,
+                                        enterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            mainTabEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            mainTabExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {}
+                                    composable(
+                                        route = Destinations.DebugListenTogether.route,
+                                        enterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.DebugListenTogether.route) {
+                                            ListenTogetherDebugScreen()
+                                        }
+                                    }
+                                    composable(
+                                        route = Destinations.DebugUsbExclusive.route,
+                                        enterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.DebugUsbExclusive.route) {
+                                            UsbExclusiveDebugScreen()
+                                        }
+                                    }
+                                    composable(
+                                        route = Destinations.DebugYouTube.route,
+                                        enterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.DebugYouTube.route) {
+                                            YouTubeApiProbeScreen()
+                                        }
+                                    }
+                                    composable(
+                                        route = Destinations.DebugBili.route,
+                                        enterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.DebugBili.route) {
+                                            BiliApiProbeScreen()
+                                        }
+                                    }
+                                    composable(
+                                        route = Destinations.DebugNetease.route,
+                                        enterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.DebugNetease.route) {
+                                            NeteaseApiProbeScreen()
+                                        }
+                                    }
+                                    composable(
+                                        route = Destinations.DebugSearch.route,
+                                        enterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.DebugSearch.route) {
+                                            SearchApiProbeScreen()
+                                        }
+                                    }
+                                    composable(
+                                        route = Destinations.DebugLogsList.route,
+                                        enterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.DebugLogsList.route) {
+                                            LogListScreen(
+                                                onBack = { navController.popBackStack() },
+                                                onLogFileClick = { filePath ->
+                                                    navController.navigate(
+                                                        Destinations.DebugLogViewer.createRoute(filePath)
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.DebugCrashLogsList.route,
+                                        enterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) {
+                                        RenderNavHostScene(Destinations.DebugCrashLogsList.route) {
+                                            CrashLogListScreen(
+                                                onBack = { navController.popBackStack() },
+                                                onLogFileClick = { filePath ->
+                                                    navController.navigate(
+                                                        Destinations.DebugLogViewer.createRoute(filePath)
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    composable(
+                                        route = Destinations.DebugLogViewer.route,
+                                        arguments = listOf(navArgument("filePath") { type = NavType.StringType }),
+                                        enterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        exitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        },
+                                        popEnterTransition = {
+                                            debugNavigationEnterTransition(coherentFeedbackEnabled)
+                                        },
+                                        popExitTransition = {
+                                            debugNavigationExitTransition(coherentFeedbackEnabled)
+                                        }
+                                    ) { backStackEntry ->
+                                        val filePath = backStackEntry.arguments?.getString("filePath") ?: ""
+                                        RenderNavHostScene(Destinations.DebugLogViewer.route) {
+                                            LogViewerScreen(
+                                                filePath = filePath,
+                                                onBack = { navController.popBackStack() }
+                                            )
+                                        }
+                                    }
+                                            }
+                                        }
+                                    }
+
+                                    AnimatedVisibility(
+                                        visible = currentSong != null && !showNowPlaying,
+                                        modifier = Modifier
+                                            .align(Alignment.BottomStart)
+                                            .padding(
+                                                bottom = bottomBarLayoutInsets.miniPlayerBottomPadding
+                                            )
+                                            .zIndex(MINI_PLAYER_OVERLAY_Z_INDEX),
+                                    enter = slideInVertically(
+                                        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+                                        initialOffsetY = { it / 2 }
+                                    ) + fadeIn(animationSpec = tween(durationMillis = 180)),
+                                    exit = slideOutVertically(
+                                        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+                                        targetOffsetY = { it / 2 }
+                                    ) + fadeOut(animationSpec = tween(durationMillis = 120))
+                                    ) {
+                                        NeriMiniPlayer(
+                                        title = currentSong?.displayName()
+                                            ?: composeResources.getString(R.string.nowplaying_no_playback),
+                                        artist = currentSong?.displayArtist() ?: "",
+                                        coverUrl = displayCoverUrl,
+                                        isPlaying = isPlaybackControlPlaying,
+                                        playPauseEnabled = !usbPlaybackPreparing,
+                                        modifier = Modifier,
+                                        onPlayPause = { PlayerManager.togglePlayPause() },
+                                        onPrevious = { PlayerManager.previous() },
+                                        onNext = { PlayerManager.next() },
+                                        onExpand = { showNowPlaying = true },
+                                        enableBlur = effectiveAdvancedBlurEnabled,
+                                        offlineMode = offlineMode,
+                                        isPlaybackWaiting = isPlaybackWaiting,
+                                        isAudioRouteMuted = isAudioRouteMuted
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
+                    }  // Row (TV rail + Scaffold)
                 }
 
                 AnimatedVisibility(
