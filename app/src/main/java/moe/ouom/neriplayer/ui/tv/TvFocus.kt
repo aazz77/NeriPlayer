@@ -122,12 +122,15 @@ private class TvFocusIndicationNode(
 
     override fun ContentDrawScope.draw() {
         val cornerRadius = CornerRadius(TV_FOCUS_CORNER_RADIUS_DP.dp.toPx())
+        // 先在 ContentDrawScope 上下文捕获 drawContent, 避免 withTransform 内层
+        // DrawScope receiver 与外层 ContentDrawScope 的隐式 receiver 歧义
+        val drawContentOnce: () -> Unit = { drawContent() }
         if (isFocused) {
             // 焦点态: 内容 + 蓝色背景 + 描边整体放大, 视觉上"浮起"
             withTransform({
                 scale(TV_FOCUS_SCALE, TV_FOCUS_SCALE, pivot = center)
             }) {
-                drawContent()
+                drawContentOnce()
                 drawRoundRect(
                     color = TvFocusBlue.copy(alpha = TV_FOCUS_BLUE_SCRIM_ALPHA),
                     cornerRadius = cornerRadius
@@ -139,7 +142,7 @@ private class TvFocusIndicationNode(
                 )
             }
         } else {
-            drawContent()
+            drawContentOnce()
             if (isPressed) {
                 drawRoundRect(
                     color = TvFocusBlue.copy(alpha = TV_PRESSED_BLUE_SCRIM_ALPHA),

@@ -4294,7 +4294,9 @@ private fun NeriAppContent(
                                         }
                                     }
 
-                                    AnimatedVisibility(
+                                    // 完全限定调用: 此处作用域存在 RowScope 隐式 receiver,
+                                    // 裸调用会被解析为 RowScope.AnimatedVisibility 扩展而编译失败
+                                    androidx.compose.animation.AnimatedVisibility(
                                         visible = currentSong != null && !showNowPlaying,
                                         modifier = Modifier
                                             .align(Alignment.BottomStart)

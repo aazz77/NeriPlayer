@@ -81,7 +81,6 @@ fun NeriNavigationRail(
                 .background(Color.Transparent),
             containerColor = Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            tonalElevation = 0.dp,
         ) {
             items.forEach { (dest, icon) ->
                 val selected = currentDestination?.hierarchy?.any { it.route == dest.route } == true
