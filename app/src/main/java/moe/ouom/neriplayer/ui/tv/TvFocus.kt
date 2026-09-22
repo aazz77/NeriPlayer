@@ -68,7 +68,7 @@ val LocalIsTvDevice = staticCompositionLocalOf { false }
  * TV 全局焦点指示器。
  *
  * 替换默认 ripple (仅在 TV 上通过 LocalIndication 注入):
- * - 焦点态: 1.03 放大 + 淡亮蓝背景 + 3dp 亮蓝描边, 遥控器用户能明确看到当前焦点在哪
+ * - 焦点态: 1.06 放大 + 淡亮蓝背景 + 4dp 亮蓝描边, 遥控器用户能明确看到当前焦点在哪
  * - 按压态: 亮蓝背景加深, 提供按下反馈
  *
  * 通过 LocalIndication 全局注入后, 所有未显式指定 indication 的
@@ -85,11 +85,11 @@ object TvFocusIndication : IndicationNodeFactory {
     override fun hashCode(): Int = System.identityHashCode(this)
 }
 
-private const val TV_FOCUS_CORNER_RADIUS_DP = 14
-private const val TV_FOCUS_STROKE_WIDTH_DP = 3
-private const val TV_FOCUS_SCALE = 1.03f
-private const val TV_FOCUS_BLUE_SCRIM_ALPHA = 0.16f
-private const val TV_PRESSED_BLUE_SCRIM_ALPHA = 0.28f
+private const val TV_FOCUS_CORNER_RADIUS_DP = 12
+private const val TV_FOCUS_STROKE_WIDTH_DP = 4
+private const val TV_FOCUS_SCALE = 1.06f
+private const val TV_FOCUS_BLUE_SCRIM_ALPHA = 0.22f
+private const val TV_PRESSED_BLUE_SCRIM_ALPHA = 0.34f
 
 // 亮蓝 (Light Blue 300), 明暗主题下都清晰可辨
 private val TvFocusBlue = Color(0xFF4FC3F7)
