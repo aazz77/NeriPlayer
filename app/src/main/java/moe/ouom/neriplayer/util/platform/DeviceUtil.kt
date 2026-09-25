@@ -38,6 +38,11 @@ internal const val ONEPLUS_HIGH_DENSITY_DPI_THRESHOLD = 500
 internal const val ONEPLUS_HIGH_DENSITY_UI_SCALE = 0.95f
 internal const val PHONE_SMALLEST_SCREEN_WIDTH_DP = 600
 
+// TV 设备全局 UI 放大系数: 1080p TV 的默认密度约 1.5x(视口约 1280x720dp),
+// 手机版 UI 直接渲染会整体偏小。此系数乘到全局密度上, 文字/图标/图片/边栏等比放大。
+// 仍可被设置页的 UI 缩放(ui_density_scale)进一步叠加。
+internal const val TV_UI_DENSITY_SCALE = 1.35f
+
 internal fun isOnePlusHighDensityDisplay(
     manufacturer: String?,
     brand: String?,

@@ -166,6 +166,7 @@ import moe.ouom.neriplayer.util.platform.applyOnePlusHighDensityDisplayCorrectio
 import moe.ouom.neriplayer.util.platform.applyPreferredHighRefreshRate
 import moe.ouom.neriplayer.util.platform.resolveOnePlusHighDensityUiScale
 import moe.ouom.neriplayer.util.platform.isTvDevice
+import moe.ouom.neriplayer.util.platform.TV_UI_DENSITY_SCALE
 import moe.ouom.neriplayer.ui.tv.LocalIsTvDevice
 import moe.ouom.neriplayer.ui.tv.TvFocusIndication
 import moe.ouom.neriplayer.ui.tv.TvRippleConfiguration
@@ -227,17 +228,21 @@ private fun AppUiDensityRoot(
 ) {
     val baseContext = LocalContext.current
     val baseDensity = LocalDensity.current
-    val scaledDensity = remember(baseDensity, userScale) {
+    // TV 设备整体放大: 在用户设置的缩放之上再乘 TV 系数,
+    // 同时作用于主内容密度与浮层(Dropdown/Dialog)补偿缩放, 保证两者一致
+    val isTvDevice = LocalIsTvDevice.current
+    val effectiveUserScale = if (isTvDevice) userScale * TV_UI_DENSITY_SCALE else userScale
+    val scaledDensity = remember(baseDensity, effectiveUserScale) {
         Density(
-            density = baseDensity.density * userScale,
+            density = baseDensity.density * effectiveUserScale,
             fontScale = baseDensity.fontScale
         )
     }
     val uncorrectedDensityDpi = baseContext.applicationContext.resources
         .displayMetrics.densityDpi
-    val surfaceScale = remember(userScale, uncorrectedDensityDpi) {
+    val surfaceScale = remember(effectiveUserScale, uncorrectedDensityDpi) {
         resolveOnePlusHighDensityUiScale(
-            userScale = userScale,
+            userScale = effectiveUserScale,
             manufacturer = Build.MANUFACTURER,
             brand = Build.BRAND,
             densityDpi = uncorrectedDensityDpi
