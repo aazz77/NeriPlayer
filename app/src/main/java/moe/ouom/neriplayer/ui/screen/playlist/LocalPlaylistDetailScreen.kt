@@ -101,7 +101,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
@@ -191,6 +190,7 @@ import moe.ouom.neriplayer.data.model.isSyncableRemoteSong
 import moe.ouom.neriplayer.data.model.sameIdentityAs
 import moe.ouom.neriplayer.data.model.stableKey
 import moe.ouom.neriplayer.ui.LocalMiniPlayerHeight
+import moe.ouom.neriplayer.ui.tv.SongRowMenuButton
 import moe.ouom.neriplayer.ui.rememberMainTabDetailVisibilityState
 import moe.ouom.neriplayer.ui.component.download.BatchDownloadManagerSheet
 import moe.ouom.neriplayer.ui.component.playlist.PlaylistExportSheet
@@ -2167,15 +2167,11 @@ fun LocalPlaylistDetailScreen(
                                                     // 更多操作菜单
                                                     var showMoreMenu by remember { mutableStateOf(false) }
                                                     Box {
-                                                        IconButton(
-                                                            onClick = { showMoreMenu = true }
-                                                        ) {
-                                                            Icon(
-                                                                Icons.Filled.MoreVert,
-                                                                contentDescription = stringResource(R.string.cd_more_actions),
-                                                                tint = playlistModernListSecondaryContentColor()
-                                                            )
-                                                        }
+                                                        SongRowMenuButton(
+                                                            onOpenMenu = { showMoreMenu = true },
+                                                            contentDescription = stringResource(R.string.cd_more_actions),
+                                                            tint = playlistModernListSecondaryContentColor()
+                                                        )
 
                                                         DropdownMenu(
                                                             expanded = showMoreMenu,

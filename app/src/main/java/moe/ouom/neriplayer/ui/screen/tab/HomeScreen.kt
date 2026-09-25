@@ -58,7 +58,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material.icons.automirrored.outlined.PlaylistPlay
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -73,7 +72,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -158,6 +156,8 @@ import moe.ouom.neriplayer.core.api.youtube.YouTubeMusicHomeShelf
 import moe.ouom.neriplayer.core.api.youtube.YouTubeMusicHomeItem
 import moe.ouom.neriplayer.core.api.youtube.YouTubeMusicParser
 import moe.ouom.neriplayer.ui.haptic.HapticIconButton
+import moe.ouom.neriplayer.ui.tv.LocalIsTvDevice
+import moe.ouom.neriplayer.ui.tv.SongRowMenuButton
 import moe.ouom.neriplayer.util.media.fastScrollableImageRequest
 import moe.ouom.neriplayer.util.format.formatPlayCount
 import kotlin.math.ceil
@@ -1123,16 +1123,10 @@ private fun SongRowMini(
         }
 
         Box {
-            IconButton(
-                onClick = { showMenu = true },
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = stringResource(R.string.common_more_actions),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            SongRowMenuButton(
+                onOpenMenu = { showMenu = true },
+                contentDescription = stringResource(R.string.common_more_actions)
+            )
 
             DropdownMenu(
                 expanded = showMenu,
@@ -2079,10 +2073,15 @@ private fun ResponsiveSongPagerList(
     offlineMode: Boolean
 ) {
     val widthDp = currentWindowWidthDp().value
-    val columns = when {
-        widthDp >= 840 -> 3
-        widthDp >= 600 -> 2
-        else -> 1
+    // TV 适配: 歌曲列表固定两列 (TV 屏幕宽, 三列时单行信息过于拥挤)
+    val columns = if (LocalIsTvDevice.current) {
+        2
+    } else {
+        when {
+            widthDp >= 840 -> 3
+            widthDp >= 600 -> 2
+            else -> 1
+        }
     }
     val rowsPerColumn = 3
     val perPage = (columns * rowsPerColumn).coerceAtLeast(1)

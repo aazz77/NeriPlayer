@@ -86,7 +86,6 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -173,6 +172,7 @@ import moe.ouom.neriplayer.data.search.exploreSearchHistoryRecordKeyword
 import moe.ouom.neriplayer.data.search.exploreSearchHistoryForDisplay
 import moe.ouom.neriplayer.data.search.resolveExploreSearchKeyword
 import moe.ouom.neriplayer.ui.effect.glass.AdvancedGlassRole
+import moe.ouom.neriplayer.ui.tv.SongRowMenuButton
 import moe.ouom.neriplayer.ui.effect.glass.AdvancedGlassSurface
 import moe.ouom.neriplayer.core.player.PlayerManager
 import moe.ouom.neriplayer.data.local.playlist.system.FavoritesPlaylist
@@ -2232,13 +2232,10 @@ internal fun SongRow(
 
         Spacer(Modifier.width(8.dp))
         Box {
-            HapticIconButton(onClick = { showMoreMenu = true }) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = stringResource(R.string.cd_more_actions),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            SongRowMenuButton(
+                onOpenMenu = { showMoreMenu = true },
+                contentDescription = stringResource(R.string.cd_more_actions)
+            )
             DropdownMenu(
                 expanded = showMoreMenu,
                 onDismissRequest = { showMoreMenu = false }

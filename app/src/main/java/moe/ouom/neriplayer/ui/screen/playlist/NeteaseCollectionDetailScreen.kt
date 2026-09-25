@@ -71,7 +71,6 @@ import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Download
@@ -84,7 +83,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -144,6 +142,7 @@ import moe.ouom.neriplayer.data.model.sameIdentityAs
 import moe.ouom.neriplayer.data.model.stableKey
 import moe.ouom.neriplayer.data.playlist.favorite.FavoritePlaylistRepository
 import moe.ouom.neriplayer.ui.LocalMiniPlayerHeight
+import moe.ouom.neriplayer.ui.tv.SongRowMenuButton
 import moe.ouom.neriplayer.ui.rememberMainTabDetailVisibilityState
 import moe.ouom.neriplayer.ui.component.download.BatchDownloadManagerSheet
 import moe.ouom.neriplayer.ui.component.playlist.PlaylistExportSheet
@@ -1196,15 +1195,11 @@ private fun SongRow(
         if (!selectionMode) {
             var showMoreMenu by remember { mutableStateOf(false) }
             Box {
-                IconButton(
-                    onClick = { showMoreMenu = true }
-                ) {
-                    Icon(
-                        Icons.Filled.MoreVert,
-                        contentDescription = stringResource(R.string.cd_more_actions),
-                        tint = playlistModernListSecondaryContentColor()
-                    )
-                }
+                SongRowMenuButton(
+                    onOpenMenu = { showMoreMenu = true },
+                    contentDescription = stringResource(R.string.cd_more_actions),
+                    tint = playlistModernListSecondaryContentColor()
+                )
 
                 DropdownMenu(
                     expanded = showMoreMenu,

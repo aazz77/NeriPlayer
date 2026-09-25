@@ -49,7 +49,6 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Download
@@ -93,6 +92,7 @@ import moe.ouom.neriplayer.data.local.playlist.system.LocalFilesPlaylist
 import moe.ouom.neriplayer.data.local.playlist.LocalPlaylistRepository
 import moe.ouom.neriplayer.data.local.playlist.launchLocalPlaylistMutation
 import moe.ouom.neriplayer.ui.LocalMiniPlayerHeight
+import moe.ouom.neriplayer.ui.tv.SongRowMenuButton
 import moe.ouom.neriplayer.ui.rememberMainTabDetailVisibilityState
 import moe.ouom.neriplayer.ui.screen.BiliVideoSkipIntervalsSheet
 import moe.ouom.neriplayer.ui.component.download.BatchDownloadManagerSheet
@@ -1272,16 +1272,12 @@ private fun VideoRow(
             var showMoreMenu by remember { mutableStateOf(false) }
             var showVideoSkipSheet by remember(video.bvid) { mutableStateOf(false) }
             Box {
-                IconButton(
-                    onClick = { showMoreMenu = true }
-                ) {
-                    Icon(
-                        Icons.Filled.MoreVert,
-                        contentDescription = stringResource(R.string.common_more_actions),
-                        tint = playlistModernListSecondaryContentColor()
-                    )
-                }
-                
+                SongRowMenuButton(
+                    onOpenMenu = { showMoreMenu = true },
+                    contentDescription = stringResource(R.string.common_more_actions),
+                    tint = playlistModernListSecondaryContentColor()
+                )
+
                 DropdownMenu(
                     expanded = showMoreMenu,
                     onDismissRequest = { showMoreMenu = false }
