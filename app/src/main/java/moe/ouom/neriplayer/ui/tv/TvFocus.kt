@@ -30,6 +30,9 @@ package moe.ouom.neriplayer.ui.tv
 
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.focusable
+import androidx.compose.material3.RippleConfiguration
+import androidx.compose.material3.RippleDefaults
+import androidx.compose.material3.RippleThemeConfiguration
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -93,6 +96,26 @@ private const val TV_PRESSED_BLUE_SCRIM_ALPHA = 0.34f
 
 // 亮蓝 (Light Blue 300), 明暗主题下都清晰可辨
 private val TvFocusBlue = Color(0xFF4FC3F7)
+
+/**
+ * M3 组件 (Surface/Button/Card/IconButton/NavigationRailItem 等) 的 TV 焦点配置。
+ *
+ * material3 1.3.0 起内置可点击组件在内部 clickable 显式传 ripple(), 不读
+ * LocalIndication, 因此 [TvFocusIndication] 对它们无效 (只对裸 clickable 生效)。
+ * TV 上需同时注入这两个值 (见 MainActivity):
+ * - LocalRippleThemeConfiguration: 把焦点指示风格从"透明度层"切换为"内嵌焦点环"
+ * - LocalRippleConfiguration: 焦点环使用 [TvFocusBlue] 双描边, 按压层同为亮蓝
+ */
+val TvRippleThemeConfiguration: RippleThemeConfiguration =
+    RippleDefaults.InsetFocusRingThemeConfiguration
+
+val TvRippleConfiguration: RippleConfiguration = RippleConfiguration(
+    focus = RippleConfiguration.Focus.InsetRing(
+        outerStrokeColor = TvFocusBlue,
+        innerStrokeColor = TvFocusBlue,
+    ),
+    color = TvFocusBlue,
+)
 
 private class TvFocusIndicationNode(
     private val interactionSource: InteractionSource

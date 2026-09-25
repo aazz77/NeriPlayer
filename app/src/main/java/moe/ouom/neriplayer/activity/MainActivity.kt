@@ -65,6 +65,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import moe.ouom.neriplayer.ui.component.overlay.DensityScaledAlertDialog as AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.material3.LocalRippleThemeConfiguration
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
@@ -167,6 +169,8 @@ import moe.ouom.neriplayer.util.platform.resolveOnePlusHighDensityUiScale
 import moe.ouom.neriplayer.util.platform.isTvDevice
 import moe.ouom.neriplayer.ui.tv.LocalIsTvDevice
 import moe.ouom.neriplayer.ui.tv.TvFocusIndication
+import moe.ouom.neriplayer.ui.tv.TvRippleConfiguration
+import moe.ouom.neriplayer.ui.tv.TvRippleThemeConfiguration
 
 private data class PendingAudioServiceStart(
     val requestToken: Long,
@@ -276,8 +280,13 @@ private fun MainActivity.setNeriContent(
             LocalIsTvDevice provides isTvDevice
         ) {
             if (isTvDevice) {
-                // TV: 全局替换默认 ripple 为焦点描边指示器, 所有 clickable 自动生效
-                CompositionLocalProvider(LocalIndication provides TvFocusIndication) {
+                // TV: 全局焦点指示。裸 clickable 走 TvFocusIndication(描边+放大);
+                // M3 1.3+ 组件显式 ripple() 不读 LocalIndication, 焦点环需单独注入
+                CompositionLocalProvider(
+                    LocalIndication provides TvFocusIndication,
+                    LocalRippleThemeConfiguration provides TvRippleThemeConfiguration,
+                    LocalRippleConfiguration provides TvRippleConfiguration,
+                ) {
                     content()
                 }
             } else {
