@@ -30,9 +30,10 @@ package moe.ouom.neriplayer.ui.tv
 
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.FocusInteraction
+import androidx.compose.material.ripple.RippleAlpha
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.RippleConfiguration
-import androidx.compose.material3.RippleDefaults
-import androidx.compose.material3.RippleThemeConfiguration
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -98,23 +99,25 @@ private const val TV_PRESSED_BLUE_SCRIM_ALPHA = 0.34f
 private val TvFocusBlue = Color(0xFF4FC3F7)
 
 /**
- * M3 组件 (Surface/Button/Card/IconButton/NavigationRailItem 等) 的 TV 焦点配置。
+ * M3 组件 (Surface/Button/Card/IconButton/NavigationRailItem 等) 的 TV 焦点配色。
  *
  * material3 1.3.0 起内置可点击组件在内部 clickable 显式传 ripple(), 不读
  * LocalIndication, 因此 [TvFocusIndication] 对它们无效 (只对裸 clickable 生效)。
- * TV 上需同时注入这两个值 (见 MainActivity):
- * - LocalRippleThemeConfiguration: 把焦点指示风格从"透明度层"切换为"内嵌焦点环"
- * - LocalRippleConfiguration: 焦点环使用 [TvFocusBlue] 双描边, 按压层同为亮蓝
+ * material3 1.4.0 没有 InsetFocusRing API (1.5.0-alpha18 才加入, 且其要求
+ * compose 1.13.0-alpha01, 会连带把 animation 升到 ≥1.12, 而 np-submodule/
+ * accompanist-lyrics-ui 依赖的 ExperimentalAnimatableApi 在 animation 1.12.0-beta01
+ * 已被移除, 编译会挂), 所以这里退而求其次: 用 1.4.0 的 LocalRippleConfiguration
+ * 把焦点/按压状态层从默认灰色改成亮蓝。
  */
-val TvRippleThemeConfiguration: RippleThemeConfiguration =
-    RippleDefaults.InsetFocusRingThemeConfiguration
-
+@OptIn(ExperimentalMaterial3Api::class)
 val TvRippleConfiguration: RippleConfiguration = RippleConfiguration(
-    focus = RippleConfiguration.Focus.InsetRing(
-        outerStrokeColor = TvFocusBlue,
-        innerStrokeColor = TvFocusBlue,
-    ),
     color = TvFocusBlue,
+    rippleAlpha = RippleAlpha(
+        focused = 0.22f,
+        pressed = 0.34f,
+        hovered = 0.12f,
+        dragged = 0.16f,
+    ),
 )
 
 private class TvFocusIndicationNode(
