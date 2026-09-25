@@ -1510,6 +1510,8 @@ private fun NeriAppContent(
     val advancedLyricsEnabled by repo.advancedLyricsEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
     val coherentFeedbackEnabled by repo.coherentFeedbackEnabledFlow
         .collectAsStateWithLifecycle(initialValue = false)
+    // TV 适配: 高性能消耗的显示效果(高级模糊/动态背景/音频响应/封面模糊)默认不启用
+    val isTvDeviceForEffects = LocalIsTvDevice.current
     val advancedBlurEnabled by repo.advancedBlurEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
     val enhancedAdvancedBlurEnabled by repo.enhancedAdvancedBlurEnabledFlow
         .collectAsStateWithLifecycle(initialValue = false)
@@ -1524,7 +1526,7 @@ private fun NeriAppContent(
         initialValue = initialAdvancedBlurQuality
     )
     val advancedBlurAvailable = isAdvancedGlassBackendSupported(Build.VERSION.SDK_INT)
-    val effectiveAdvancedBlurEnabled = advancedBlurAvailable && advancedBlurEnabled
+    val effectiveAdvancedBlurEnabled = advancedBlurAvailable && advancedBlurEnabled && !isTvDeviceForEffects
     val nowPlayingAudioReactiveEnabled by repo.nowPlayingAudioReactiveEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
     val nowPlayingDynamicBackgroundEnabled by repo.nowPlayingDynamicBackgroundEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
     val nowPlayingCoverBlurBackgroundEnabled by repo.nowPlayingCoverBlurBackgroundEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
@@ -1930,14 +1932,14 @@ private fun NeriAppContent(
     val backgroundGlassBackdrop = rememberAdvancedGlassBackdrop()
     val contentGlassBackdrop = rememberAdvancedGlassBackdrop()
     val advancedGlassController = remember(
-        advancedBlurEnabled,
+        effectiveAdvancedBlurEnabled,
         enhancedAdvancedBlurEnabled,
         enhancedAdvancedBlurRadiusDp,
         advancedBlurQuality
     ) {
         AdvancedGlassController(
             sdkInt = Build.VERSION.SDK_INT,
-            advancedBlurEnabled = advancedBlurEnabled,
+            advancedBlurEnabled = effectiveAdvancedBlurEnabled,
             enhancedAdvancedBlurEnabled = enhancedAdvancedBlurEnabled,
             backendReady = isAdvancedGlassBackendSupported(Build.VERSION.SDK_INT),
             enhancedAdvancedBlurRadiusDp = enhancedAdvancedBlurRadiusDp,
@@ -3340,7 +3342,8 @@ private fun NeriAppContent(
             }
 
             val effectiveDynamicBackgroundEnabled =
-                nowPlayingDynamicBackgroundEnabled && !nowPlayingCoverBlurBackgroundEnabled
+                nowPlayingDynamicBackgroundEnabled && !nowPlayingCoverBlurBackgroundEnabled &&
+                    !isTvDeviceForEffects
             val effectiveAudioReactiveEnabled =
                 nowPlayingAudioReactiveEnabled && effectiveDynamicBackgroundEnabled
 
@@ -4389,6 +4392,7 @@ private fun NeriAppContent(
                             val hasCoverBlur =
                                 coverBlurAvailable &&
                                     nowPlayingCoverBlurBackgroundEnabled &&
+                                    !isTvDeviceForEffects &&
                                     !nowPlayingCoverUrl.isNullOrBlank()
                             val blurStrength = nowPlayingCoverBlurAmount.coerceIn(0f, 500f)
                             val effectiveBlurStrength = remember(nowPlayingCoverUrl, blurStrength) {

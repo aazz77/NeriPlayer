@@ -1125,6 +1125,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         if (!safeModeActive) {
+            // TV 适配: 不支持后台播放, 退出前台立即暂停
+            if (isTvDevice() && PlayerManager.playWhenReadyFlow.value) {
+                PlayerManager.pause()
+            }
             PlayerManager.flushPlaybackStatsAsync("activity_stop")
             AppContainer.listenTogetherSessionManager.onApplicationBackgrounded()
         }
