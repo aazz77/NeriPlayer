@@ -34,7 +34,6 @@ import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.RippleConfiguration
-import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.runtime.Composable
@@ -113,10 +112,10 @@ private val TvFocusBlue = Color(0xFF4FC3F7)
 val TvRippleConfiguration: RippleConfiguration = RippleConfiguration(
     color = TvFocusBlue,
     rippleAlpha = RippleAlpha(
-        focused = 0.22f,
-        pressed = 0.34f,
-        hovered = 0.12f,
-        dragged = 0.16f,
+        focusedAlpha = 0.22f,
+        pressedAlpha = 0.34f,
+        hoveredAlpha = 0.12f,
+        draggedAlpha = 0.16f,
     ),
 )
 
