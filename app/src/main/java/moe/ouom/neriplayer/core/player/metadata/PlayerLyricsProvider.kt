@@ -61,6 +61,7 @@ import moe.ouom.neriplayer.data.model.SongItem
 import moe.ouom.neriplayer.data.storage.lyricsCacheDirectory
 import moe.ouom.neriplayer.core.logging.NPLogger
 import moe.ouom.neriplayer.util.network.isTransientHttp2StreamReset
+import moe.ouom.neriplayer.util.platform.isTvDevice
 import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -556,6 +557,10 @@ internal object PlayerLyricsProvider {
         if (!AppContainer.isInitialized()) {
             return null
         }
+        // TV: 禁止读取落盘歌词
+        if (AppContainer.applicationContext.isTvDevice()) {
+            return null
+        }
         return withLyricsCacheReadLock {
             val file = persistedNeteaseLyricsFile(songId)
             if (!file.isFile || file.length() <= 0L) {
@@ -574,6 +579,10 @@ internal object PlayerLyricsProvider {
         entry: NeteaseLyricsCacheEntry
     ) {
         if (entry.rawResponse.isBlank() || !AppContainer.isInitialized()) {
+            return
+        }
+        // TV: 禁止歌词落盘
+        if (AppContainer.applicationContext.isTvDevice()) {
             return
         }
         runCatching {

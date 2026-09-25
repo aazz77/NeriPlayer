@@ -148,6 +148,8 @@ import moe.ouom.neriplayer.data.settings.PlaybackPreferenceSnapshot
 import moe.ouom.neriplayer.data.settings.UsbExclusivePreferences
 import moe.ouom.neriplayer.data.settings.readPlaybackPreferenceSnapshotSync
 import moe.ouom.neriplayer.data.settings.toUsbExclusivePreferences
+import moe.ouom.neriplayer.data.storage.lyricsCacheDirectory
+import moe.ouom.neriplayer.util.platform.isTvDevice
 import moe.ouom.neriplayer.util.platform.readBackgroundBehaviorAllowance
 import java.io.File
 
@@ -319,9 +321,21 @@ internal fun PlayerManager.initializeImpl(
         }
         initializationInProgress = true
     }
-    val effectiveMaxCacheSize = CacheSizePolicy.normalizeCacheSizeBytes(maxCacheSize)
+    val isTvDevice = app.isTvDevice()
+    // TV: 禁用歌曲缓存, 并清理历史缓存目录 (歌曲/歌词)
+    val effectiveMaxCacheSize = if (isTvDevice) {
+        0L
+    } else {
+        CacheSizePolicy.normalizeCacheSizeBytes(maxCacheSize)
+    }
     try {
         runCatching {
+            if (isTvDevice) {
+                runCatching {
+                    File(app.cacheDir, MEDIA_CACHE_DIRECTORY_NAME).deleteRecursively()
+                    lyricsCacheDirectory(app).deleteRecursively()
+                }
+            }
             NPLogger.d(
                 "NERI-PlayerManager",
                 "initialize(): maxCacheSize=$effectiveMaxCacheSize, app=${app.packageName}, stack=[${debugStackHint()}]"

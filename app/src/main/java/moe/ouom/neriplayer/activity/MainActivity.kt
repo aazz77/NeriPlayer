@@ -497,14 +497,18 @@ class MainActivity : ComponentActivity() {
                 var playedEntrance by rememberSaveable { mutableStateOf(false) }
                 LaunchedEffect(Unit) { playedEntrance = true }
 
+                val isTvDeviceForStartup = LocalIsTvDevice.current
                 val stage = remember(
                     disclaimerAccepted,
                     startupOnboardingCompleted,
-                    pendingDisclaimerAccepted
+                    pendingDisclaimerAccepted,
+                    isTvDeviceForStartup
                 ) {
                     StartupStageResolver.resolve(
                         disclaimerAccepted = disclaimerAccepted,
-                        startupOnboardingCompleted = startupOnboardingCompleted,
+                        // TV: 跳过首次引导, 直接用默认设置进入主界面
+                        startupOnboardingCompleted =
+                            if (isTvDeviceForStartup) true else startupOnboardingCompleted,
                         pendingDisclaimerAccepted = pendingDisclaimerAccepted
                     )
                 }
